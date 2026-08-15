@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>Conference Session Timer Schedule</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
+      --radius-md: 0.75rem;
+      --radius-lg: 1rem;
+      --radius-full: 9999px;
+      --font-body: 'Satoshi', 'Inter', sans-serif;
+      --line: rgba(255,255,255,0.14);
+      --glass: rgba(15,23,42,0.38);
+      --glass-strong: rgba(15,23,42,0.56);
+      --text: #f8fafc;
+      --muted: rgba(248,250,252,0.78);
+      --green: #1f7a3e;
+      --yellow: #d8a413;
+      --orange: #d96b19;
+      --red: #ba1e28;
+      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+      --shadow: 0 18px 45px rgba(2, 6, 23, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      font-family: var(--font-body);
+      color: var(--text);
+      background: var(--green);
+      transition: background 400ms ease;
+      padding: var(--space-4);
+    }
+
+    body.phase-green  { background: radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 32%), var(--green); }
+    body.phase-yellow { background: radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 32%), var(--yellow); }
+    body.phase-orange { background: radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 32%), var(--orange); }
+    body.phase-red    { background: radial-gradient(circle at top, rgba(255,255,255,0.12), transparent 32%), var(--red); }
+    body.phase-blink-a { background: var(--red); }
+    body.phase-blink-b { background: var(--yellow); }
+
+    .app {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 410px 1fr;
+      gap: var(--space-4);
+      min-height: calc(100dvh - 2rem);
+    }
+
+    .panel,
+    .display {
+      background: var(--glass-strong);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .panel {
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+      overflow-y: auto;
+    }
+
+    h1 {
+      margin: 0 0 var(--space-2);
+      font-size: var(--text-xl);
+      line-height: 1.05;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .intro, .hint, .helper {
+      margin: 0;
+      font-size: var(--text-sm);
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    #validationMessage.success { color: #7dffb0; }
+    #validationMessage.error   { color: #ff9d9d; }
+
+    .section-label {
+      margin: 0 0 var(--space-3);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .preset-grid, .button-grid, .quick-grid,
+    .meta-grid, .summary-grid { display: grid; gap: var(--space-2); }
+
+    .preset-grid, .button-grid, .quick-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    button, textarea, input, select { font: inherit; color: var(--text); }
+
+    button {
+      min-height: 46px;
+      border-radius: var(--radius-full);
+      border: 0;
+      padding: 0 var(--space-4);
+      background: rgba(255,255,255,0.1);
+      font-size: var(--text-sm);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform var(--transition), background var(--transition), opacity var(--transition);
+    }
+
+    button:hover  { transform: translateY(-1px); }
+    button.active { background: rgba(255,255,255,0.22); }
+    button.primary { background: rgba(15,23,42,0.82); }
+    button.update { background: rgba(31, 122, 62, 0.8); }
+    button.update:hover { background: rgba(31, 122, 62, 1); }
+    button.wide   { grid-column: 1 / -1; }
+
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.12);
+      padding: var(--space-4);
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .display {
+      padding: clamp(var(--space-6), 4vw, var(--space-10));
+      display: grid;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .display-inner {
+      width: 100%;
+      display: grid;
+      gap: var(--space-6);
+      justify-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .status-pill {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 var(--space-5);
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.12);
+      font-size: clamp(1rem, 1vw + 0.9rem, 1.2rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: opacity 180ms ease;
+    }
+
+    .time {
+      margin: 0;
+      font-size: clamp(5rem, 18vw, 14rem);
+      line-height: 0.88;
+      letter-spacing: -0.08em;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums lining-nums;
+    }
+
+    .progress-bar {
+      width: min(560px, 100%);
+      height: 10px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.14);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.92);
+      transition: width 500ms linear;
+    }
+
+    .subline {
+      font-size: clamp(1rem, 1.2vw + 0.9rem, 1.45rem);
+      color: rgba(255,255,255,0.9);
+      transition: opacity 180ms ease;
+    }
+
+    .summary-grid {
+      width: 100%;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: var(--space-3);
+      transition: opacity 180ms ease;
+    }
+
+    .summary-card, .meta-card, .schedule-list {
+      background: var(--glass);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+    }
+
+    .summary-card, .meta-card {
+      padding: var(--space-4);
+      text-align: left;
+    }
+
+    .summary-card span, .meta-card span {
+      display: block;
+      margin-bottom: var(--space-2);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .summary-card strong, .meta-card strong {
+      display: block;
+      font-size: var(--text-lg);
+      line-height: 1.2;
+    }
+
+    .schedule-list {
+      max-height: 300px;
+      overflow: auto;
+      padding: var(--space-2);
+      display: grid;
+      gap: var(--space-2);
+    }
+
+    .schedule-row {
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      display: grid;
+      gap: var(--space-1);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid transparent;
+      text-align: left;
+    }
+
+    .schedule-row.active {
+      background: rgba(255,255,255,0.18);
+      border-color: rgba(255,255,255,0.16);
+    }
+
+    .schedule-row small  { color: var(--muted); font-size: var(--text-xs); }
+    .schedule-row strong { font-size: var(--text-sm); line-height: 1.3; }
+
+    .schedule-row[draggable] { cursor: grab; }
+    .schedule-row[draggable]:active { cursor: grabbing; }
+    .schedule-row.dragging { opacity: 0.4; }
+    .schedule-row.drag-over-top { border-top: 2px solid rgba(255,255,255,0.85); }
+    .schedule-row.drag-over-bottom { border-bottom: 2px solid rgba(255,255,255,0.85); }
+
+    .meta-grid {
+      width: 100%;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      transition: opacity 180ms ease;
+    }
+
+    /* ── Wrap overlay ── */
+    .wrap-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+      background: var(--red);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.98);
+      transition: opacity 180ms ease, transform 180ms ease, background 180ms ease;
+    }
+
+    .wrap-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .wrap-overlay-inner {
+      text-align: center;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .wrap-title {
+      font-size: clamp(6rem, 18vw, 24rem);
+      line-height: 0.9;
+      font-weight: 900;
+      letter-spacing: -0.08em;
+      text-transform: uppercase;
+      color: #fff;
+      -webkit-text-stroke: 8px rgba(0, 0, 0, 0.35);
+      text-shadow:
+        0 4px 0 rgba(0, 0, 0, 0.25),
+        0 0 20px rgba(0, 0, 0, 0.2),
+        0 0 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .wrap-timer {
+      font-size: clamp(4rem, 12vw, 10rem);
+      line-height: 0.9;
+      font-weight: 900;
+      letter-spacing: -0.08em;
+      font-variant-numeric: tabular-nums lining-nums;
+      color: rgba(255,255,255,0.92);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 0 30px rgba(0,0,0,0.15);
+    }
+
+    .wrap-dismiss {
+      font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+    }
+
+    body.wrap-mode .panel,
+    body.wrap-mode .status-pill,
+    body.wrap-mode .subline,
+    body.wrap-mode .summary-grid,
+    body.wrap-mode .meta-grid {
+      opacity: 0.06;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    body.wrap-mode .time,
+    body.wrap-mode .progress-bar {
+      opacity: 0.06;
+      transition: opacity 180ms ease;
+    }
+
+    @media (max-width: 1080px) {
+      .app { grid-template-columns: 1fr; }
+      .summary-grid, .meta-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .preset-grid, .button-grid, .quick-grid { grid-template-columns: 1fr; }
+      textarea { min-height: 180px; }
+      .wrap-title { font-size: clamp(4rem, 22vw, 10rem); }
+    }
+  </style>
+</head>
+<body class="phase-green">
+  <main class="app">
+    <aside class="panel" aria-label="Schedule controls">
+      <section>
+        <h1>Schedule Timer</h1>
+        <p class="intro">Build a whole run of talks and breaks in one go, then let the timer advance through each segment automatically. Your schedule is saved in this browser and restored on reload.</p>
+      </section>
+
+      <section>
+        <p class="section-label">Prebuilt schedules</p>
+        <div class="preset-grid">
+          <button class="schedule-preset active" data-preset="sample">2x25, 50, 60 break</button>
+          <button class="schedule-preset" data-preset="standard">25, 25, 50</button>
+          <button class="schedule-preset" data-preset="short-demo">Demo run</button>
+          <button class="schedule-preset" data-preset="blank">Blank</button>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Quick add</p>
+        <div class="quick-grid">
+          <button id="add25">Add 25 + 5</button>
+          <button id="add50">Add 50 + 10</button>
+          <button id="addBreak15">Add 15 break</button>
+          <button id="addBreak60">Add 60 break</button>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Schedule editor</p>
+        <textarea id="scheduleInput" spellcheck="false"></textarea>
+        <p class="helper">
+          Format one segment per line: <strong>talk, 25, Title</strong> or <strong>break, 60, Lunch</strong>.<br><br>
+          <strong>Live Updates:</strong> Edit upcoming lines below or use Quick Add, then click <strong>Update live</strong> to modify the queue without interrupting the current segment. <em>(Do not delete past lines)</em>.
+        </p>
+        <p class="helper" style="margin-top: var(--space-3);">
+          Shortcuts: <strong>Space</strong> start/pause · <strong>N</strong> next · <strong>R</strong> reset · <strong>F</strong> fullscreen · <strong>O</strong> dismiss overlay · <strong>M</strong> sound
+        </p>
+        <div class="button-grid" style="margin-top: var(--space-3);">
+          <button id="loadSchedule" class="primary">Load / Restart</button>
+          <button id="updateLive" class="update">Update live</button>
+          <button id="startPause">Start</button>
+          <button id="skip">Skip to next</button>
+          <button id="reset">Reset segment</button>
+          <button id="clearSchedule">Clear text</button>
+          <button id="soundToggle">Sound: On</button>
+          <button id="fullscreen" class="wide">Fullscreen</button>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Queue preview</p>
+        <div id="scheduleList" class="schedule-list"></div>
+        <p class="helper" style="margin-top: var(--space-2);">Drag segments to reorder. Past and in-progress segments are locked.</p>
+        <p id="validationMessage" class="hint">Schedule loaded.</p>
+      </section>
+    </aside>
+
+    <section class="display" aria-label="Main countdown display">
+      <div class="display-inner">
+        <div id="statusPill" class="status-pill">Talk ready</div>
+        <p id="timeLeft" class="time" aria-live="off">25:00</p>
+        <div class="progress-bar" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+        <div id="subline" class="subline">Opening talk · next: Short buffer</div>
+
+        <div class="summary-grid">
+          <article class="summary-card">
+            <span>Current segment</span>
+            <strong id="currentSegment">Opening talk</strong>
+          </article>
+          <article class="summary-card">
+            <span>Next segment</span>
+            <strong id="nextSegment">Short buffer</strong>
+          </article>
+          <article class="summary-card">
+            <span>Progress</span>
+            <strong id="progressInfo">1 of 6</strong>
+          </article>
+          <article class="summary-card">
+            <span>Total schedule</span>
+            <strong id="totalDuration">2h 50m</strong>
+          </article>
+        </div>
+
+        <div class="meta-grid">
+          <article class="meta-card">
+            <span>Type</span>
+            <strong id="segmentType">Talk</strong>
+          </article>
+          <article class="meta-card">
+            <span>Segment length</span>
+            <strong id="segmentLength">25 minutes</strong>
+          </article>
+          <article class="meta-card">
+            <span>Remaining queue</span>
+            <strong id="remainingQueue">5 segments</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Full-screen wrap overlay (kept out of .display so position:fixed covers the viewport) -->
+  <div id="wrapOverlay" class="wrap-overlay" aria-live="assertive" aria-atomic="true">
+    <div class="wrap-overlay-inner">
+      <div class="wrap-title">WRAP IT UP!!!</div>
+      <div id="wrapTimer" class="wrap-timer">00:00</div>
+          <div class="wrap-dismiss">Press O or click to dismiss</div>
+    </div>
+  </div>
+
+  <script>
+    const PRESETS = {
+      sample: [
+        'talk, 25, Opening talk',
+        'break, 5, Short buffer',
+        'talk, 25, Second talk',
+        'break, 5, Coffee buffer',
+        'talk, 50, Featured session',
+        'break, 60, Lunch break'
+      ].join('\n'),
+      standard: [
+        'talk, 25, Session 1',
+        'break, 5, Buffer',
+        'talk, 25, Session 2',
+        'break, 5, Buffer',
+        'talk, 50, Session 3',
+        'break, 10, Buffer'
+      ].join('\n'),
+      'short-demo': [
+        'talk, 3, Demo talk 1',
+        'break, 1, Demo break',
+        'talk, 3, Demo talk 2',
+        'break, 1, Demo reset',
+        'talk, 5, Demo keynote',
+        'break, 2, Demo wrap'
+      ].join('\n'),
+      blank: ''
+    };
+
+    const STORAGE_KEY = 'conferenceTimer.v15';
+
+    const scheduleInput      = document.getElementById('scheduleInput');
+    const loadScheduleBtn    = document.getElementById('loadSchedule');
+    const updateLiveBtn      = document.getElementById('updateLive');
+    const clearScheduleBtn   = document.getElementById('clearSchedule');
+    const startPauseBtn      = document.getElementById('startPause');
+    const resetBtn           = document.getElementById('reset');
+    const skipBtn            = document.getElementById('skip');
+    const fullscreenBtn      = document.getElementById('fullscreen');
+    const soundBtn           = document.getElementById('soundToggle');
+    const schedulePresetBtns = [...document.querySelectorAll('.schedule-preset')];
+    const add25Btn           = document.getElementById('add25');
+    const add50Btn           = document.getElementById('add50');
+    const addBreak15Btn      = document.getElementById('addBreak15');
+    const addBreak60Btn      = document.getElementById('addBreak60');
+    const statusPill         = document.getElementById('statusPill');
+    const timeLeft           = document.getElementById('timeLeft');
+    const progressFill       = document.getElementById('progressFill');
+    const wrapOverlay        = document.getElementById('wrapOverlay');
+    const wrapTimerEl        = document.getElementById('wrapTimer');
+    const subline            = document.getElementById('subline');
+    const currentSegmentEl   = document.getElementById('currentSegment');
+    const nextSegmentEl      = document.getElementById('nextSegment');
+    const progressInfoEl     = document.getElementById('progressInfo');
+    const totalDurationEl    = document.getElementById('totalDuration');
+    const segmentTypeEl      = document.getElementById('segmentType');
+    const segmentLengthEl    = document.getElementById('segmentLength');
+    const remainingQueueEl   = document.getElementById('remainingQueue');
+    const scheduleListEl     = document.getElementById('scheduleList');
+    const validationMessageEl = document.getElementById('validationMessage');
+    const body               = document.body;
+
+    let schedule          = [];
+    let currentIndex      = 0;
+    let remainingSeconds  = 0;
+    let timerRunning      = false;
+    let timerId           = null;
+    let deadline          = 0;
+    let blinkState        = false;
+    let blinkTimerId      = null;
+    let overlayDismissed  = false;
+    let scheduleComplete  = false;
+    let soundMuted        = false;
+    let alertedPhase      = 'green';
+    let dragIndex         = null;
+    let started           = false;
+
+    const PHASE_RANK = { green: 0, yellow: 1, orange: 2, red: 3, blink: 4 };
+
+    /* ── Feedback helpers ── */
+
+    function setMessage(text, type) {
+      validationMessageEl.textContent = text;
+      validationMessageEl.classList.toggle('success', type === 'success');
+      validationMessageEl.classList.toggle('error', type === 'error');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    /* ── Persistence ── */
+
+    function persist() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          text: scheduleInput.value,
+          index: currentIndex,
+          muted: soundMuted
+        }));
+      } catch (_) {}
+    }
+
+    function restore() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        if (typeof data.muted === 'boolean') soundMuted = data.muted;
+        updateSoundBtn();
+        if (typeof data.text === 'string' && data.text.trim()) {
+          scheduleInput.value = data.text;
+          schedule = parseSchedule(data.text);
+          currentIndex = Math.min(Math.max(data.index ?? 0, 0), Math.max(schedule.length - 1, 0));
+          remainingSeconds = schedule[currentIndex].seconds;
+          schedulePresetBtns.forEach(b => b.classList.remove('active'));
+          render();
+          setMessage(`Restored saved schedule (${schedule.length} segments).`, 'success');
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    }
+
+    /* ── Schedule parsing ── */
+
+    function getTalkWarnings(minutes) {
+      if (minutes === 25) return { yellow: 7*60, orange: 5*60, red: 2*60, blink: 60 };
+      if (minutes === 50) return { yellow: 10*60, orange: 5*60, red: 2*60, blink: 60 };
+      const total = minutes * 60;
+      return {
+        yellow: Math.max(3*60, Math.round(total * 0.28)),
+        orange: Math.max(2*60, Math.round(total * 0.2)),
+        red:    Math.max(60,   Math.round(total * 0.08)),
+        blink:  Math.max(30,   Math.round(total * 0.04))
+      };
+    }
+
+    function parseSchedule(text) {
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      if (!lines.length) throw new Error('Add at least one schedule segment.');
+      return lines.map((line, index) => {
+        const parts = line.split(',').map(p => p.trim());
+        if (parts.length < 2) throw new Error(`Line ${index + 1} must include type and minutes.`);
+        const type    = parts[0].toLowerCase();
+        const minutes = Number(parts[1]);
+        const title   = parts.slice(2).join(', ') || (type === 'break' ? `Break ${index+1}` : `Talk ${index+1}`);
+        if (!['talk','break'].includes(type)) throw new Error(`Line ${index + 1} must start with talk or break.`);
+        if (!Number.isFinite(minutes) || minutes <= 0) throw new Error(`Line ${index + 1} needs a valid minute value.`);
+        const base = { type, title, minutes, seconds: Math.round(minutes * 60) };
+        return type === 'talk' ? { ...base, warnings: getTalkWarnings(minutes) } : { ...base, warnings: null };
+      });
+    }
+
+    /* ── Formatting ── */
+
+    function formatTime(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      if (h) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+      return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    }
+
+    function formatDuration(totalMinutes) {
+      const h = Math.floor(totalMinutes/60), m = totalMinutes%60;
+      if (h && m) return `${h}h ${m}m`;
+      if (h) return `${h}h`;
+      return `${m}m`;
+    }
+
+    /* ── Timer control ── */
+
+    function running() { return timerRunning; }
+
+    function stopTimer() {
+      timerRunning = false;
+      deadline = 0;
+      if (timerId !== null) { clearInterval(timerId); timerId = null; }
+    }
+
+    function startTimer() {
+      if (scheduleComplete) {
+        setMessage('Schedule complete — use Load / Restart.', 'error');
+        return;
+      }
+      if (!schedule.length || running()) return;
+      if (remainingSeconds <= 0) {
+        goToNextSegment();
+        if (!schedule.length || scheduleComplete) return;
+      }
+      started = true;
+      timerRunning = true;
+      deadline = performance.now() + remainingSeconds * 1000;
+      if (timerId === null) timerId = setInterval(tick, 1000);
+      render();
+    }
+
+    function pauseTimer() {
+      if (!timerRunning) return;
+      remainingSeconds = Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
+      stopTimer();
+      render();
+    }
+
+    function tick() {
+      if (!timerRunning) return;
+      const now = performance.now();
+      if (now >= deadline) {
+        remainingSeconds = 0;
+        updateTimerUI();
+        finishSegment();
+        return;
+      }
+      const fresh = Math.ceil((deadline - now) / 1000);
+      if (fresh !== remainingSeconds) {
+        remainingSeconds = fresh;
+        updateTimerUI();
+      }
+      alertForPhase(colorPhase(currentSegment()));
+    }
+
+    function finishSegment() {
+      playChime();
+      goToNextSegment();
+    }
+
+    function goToNextSegment() {
+      if (!schedule.length) return;
+      if (currentIndex < schedule.length - 1) {
+        currentIndex++;
+        remainingSeconds = schedule[currentIndex].seconds;
+        blinkState = false;
+        overlayDismissed = false;
+        scheduleComplete = false;
+        alertedPhase = 'green';
+        started = true;
+        if (timerRunning) deadline = performance.now() + remainingSeconds * 1000;
+        render();
+        return;
+      }
+      stopTimer();
+      remainingSeconds = 0;
+      scheduleComplete = true;
+      render();
+    }
+
+    function resetSegment() {
+      if (!schedule.length) return;
+      const wasRunning = timerRunning;
+      stopTimer();
+      remainingSeconds = schedule[currentIndex].seconds;
+      blinkState = false;
+      overlayDismissed = false;
+      scheduleComplete = false;
+      alertedPhase = 'green';
+      render();
+      if (wasRunning) startTimer();
+    }
+
+    /* ── Schedule actions ── */
+
+    function setPreset(name) {
+      schedulePresetBtns.forEach(b => b.classList.toggle('active', b.dataset.preset === name));
+      scheduleInput.value = PRESETS[name];
+      if (name !== 'blank') loadSchedule();
+      else {
+        schedule = []; currentIndex = 0; remainingSeconds = 0; scheduleComplete = false;
+        started = false;
+        stopTimer(); render();
+        setMessage('Schedule cleared — use quick add or write your own.', 'success');
+      }
+    }
+
+    function loadSchedule() {
+      try {
+        schedule          = parseSchedule(scheduleInput.value);
+        currentIndex      = 0;
+        remainingSeconds  = schedule[0].seconds;
+        blinkState        = false;
+        overlayDismissed  = false;
+        scheduleComplete  = false;
+        alertedPhase      = 'green';
+        started           = false;
+        stopTimer();
+        setMessage(`Restarted from top. Loaded ${schedule.length} segments.`, 'success');
+        render();
+      } catch (e) {
+        setMessage(e.message, 'error');
+      }
+    }
+
+    function updateLiveSchedule() {
+      if (!schedule.length) {
+        setMessage('Nothing to update yet — load or quick-add a schedule first.', 'error');
+        return;
+      }
+      try {
+        const newParsed = parseSchedule(scheduleInput.value);
+        const pastAndCurrent = schedule.slice(0, currentIndex + 1);
+        const future = newParsed.slice(currentIndex + 1);
+        schedule = [...pastAndCurrent, ...future];
+        if (future.length) scheduleComplete = false;
+        setMessage('Upcoming segments updated live.', 'success');
+        render();
+      } catch (e) {
+        setMessage(`Live update failed: ${e.message}`, 'error');
+      }
+    }
+
+    function clearSchedule() {
+      scheduleInput.value = '';
+      schedule = []; currentIndex = 0; remainingSeconds = 0; scheduleComplete = false;
+      started = false;
+      stopTimer();
+      setMessage('Schedule cleared.', 'success');
+      render();
+    }
+
+    function appendLine(text) {
+      scheduleInput.value = scheduleInput.value.trim()
+        ? `${scheduleInput.value.trim()}\n${text}` : text;
+    }
+
+    function quickAdd(line) {
+      appendLine(line);
+      if (schedule.length === 0) loadSchedule();
+      else updateLiveSchedule();
+    }
+
+    /* ── Drag-and-drop reordering ── */
+
+    function syncTextareaFromSchedule() {
+      scheduleInput.value = schedule.map(seg => `${seg.type}, ${seg.minutes}, ${seg.title}`).join('\n');
+    }
+
+    function reorderSegment(from, to, before) {
+      const [seg] = schedule.splice(from, 1);
+      let insertAt;
+      if (before) insertAt = to <= from ? to : to - 1;
+      else insertAt = to < from ? to + 1 : to;
+      schedule.splice(insertAt, 0, seg);
+      syncTextareaFromSchedule();
+      setMessage('Schedule reordered.', 'success');
+      render();
+    }
+
+    /* ── Audio ── */
+
+    let audioCtx = null;
+
+    function ensureAudio() {
+      if (soundMuted) return null;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function beep(freq, dur, delay = 0, gain = 0.2) {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const t = ctx.currentTime + delay;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(gain, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + dur + 0.02);
+    }
+
+    function playChime() {
+      beep(660, 0.15);
+      beep(880, 0.25, 0.15);
+    }
+
+    function toggleSound() {
+      soundMuted = !soundMuted;
+      updateSoundBtn();
+      persist();
+      if (!soundMuted) beep(880, 0.12);
+    }
+
+    function updateSoundBtn() {
+      soundBtn.textContent = soundMuted ? 'Sound: Off' : 'Sound: On';
+      soundBtn.classList.toggle('active', !soundMuted);
+      soundBtn.setAttribute('aria-pressed', String(!soundMuted));
+    }
+
+    /* ── Phase colors ── */
+
+    function colorPhase(segment) {
+      if (!segment || segment.type === 'break') return 'green';
+      const w = segment.warnings;
+      if (remainingSeconds <= w.blink) return 'blink';
+      if (remainingSeconds <= w.red) return 'red';
+      if (remainingSeconds <= w.orange) return 'orange';
+      if (remainingSeconds <= w.yellow) return 'yellow';
+      return 'green';
+    }
+
+    function alertForPhase(phase) {
+      if (soundMuted) return;
+      if (PHASE_RANK[phase] > PHASE_RANK[alertedPhase]) {
+        if (phase === 'yellow') beep(440, 0.15);
+        else if (phase === 'orange') { beep(523, 0.12); beep(659, 0.12, 0.15); }
+        else if (phase === 'red') { beep(659, 0.12); beep(659, 0.12, 0.15); beep(659, 0.12, 0.3); }
+        alertedPhase = phase;
+      }
+      if (phase === 'blink') beep(1200, 0.06);
+    }
+
+    function syncOverlayBlink() {
+      wrapOverlay.style.background = blinkState ? 'var(--red)' : 'var(--yellow)';
+    }
+
+    function blinkTick() {
+      blinkState = !blinkState;
+      body.classList.remove('phase-blink-a', 'phase-blink-b');
+      body.classList.add(blinkState ? 'phase-blink-a' : 'phase-blink-b');
+      syncOverlayBlink();
+    }
+
+    function startBlink() {
+      if (blinkTimerId !== null) return;
+      blinkTimerId = setInterval(blinkTick, 450);
+    }
+
+    function stopBlink() {
+      if (blinkTimerId !== null) {
+        clearInterval(blinkTimerId);
+        blinkTimerId = null;
+      }
+    }
+
+    function dismissOverlay() {
+      if (!wrapOverlay.classList.contains('visible')) return;
+      overlayDismissed = true;
+      stopBlink();
+      body.classList.remove('wrap-mode');
+      wrapOverlay.classList.remove('visible');
+      goToNextSegment();
+    }
+
+    function applyColors(segment) {
+      body.className = '';
+      if (scheduleComplete || !segment || segment.type === 'break') {
+        body.classList.add('phase-green');
+        body.classList.remove('wrap-mode');
+        wrapOverlay.classList.remove('visible');
+        stopBlink();
+        return;
+      }
+      const phase = colorPhase(segment);
+
+      if (phase === 'blink') {
+        if (!overlayDismissed) {
+          body.classList.add(blinkState ? 'phase-blink-a' : 'phase-blink-b');
+          body.classList.add('wrap-mode');
+          wrapOverlay.classList.add('visible');
+          syncOverlayBlink();
+          startBlink();
+        } else {
+          body.classList.remove('wrap-mode');
+          wrapOverlay.classList.remove('visible');
+          stopBlink();
+        }
+      } else {
+        body.classList.remove('wrap-mode');
+        wrapOverlay.classList.remove('visible');
+        stopBlink();
+        overlayDismissed = false;
+        body.classList.add(phase === 'green' ? 'phase-green' : `phase-${phase}`);
+      }
+    }
+
+    /* ── Rendering ── */
+
+    function renderScheduleList() {
+      if (!schedule.length) {
+        scheduleListEl.innerHTML = '<div class="schedule-row"><strong>No schedule loaded</strong><small>Add lines and load the schedule.</small></div>';
+        return;
+      }
+      scheduleListEl.innerHTML = schedule.map((seg, i) => {
+        const draggable = !isLocked(i) ? ' draggable="true"' : '';
+        return `
+        <div class="schedule-row${i === currentIndex ? ' active' : ''}" data-index="${i}"${draggable}>
+          <small>${i+1}. ${seg.type === 'talk' ? 'Talk' : 'Break'} · ${seg.minutes} min</small>
+          <strong>${escapeHtml(seg.title)}</strong>
+        </div>`;
+      }).join('');
+    }
+
+    function updateTimerUI() {
+      const current = currentSegment();
+      const formatted = formatTime(remainingSeconds);
+
+      timeLeft.textContent    = formatted;
+      wrapTimerEl.textContent = formatted;
+      document.title = `${formatted} · Conference Session Timer`;
+
+      progressFill.style.width = current && current.seconds > 0
+        ? `${Math.max(0, Math.min(100, (remainingSeconds / current.seconds) * 100))}%`
+        : '0%';
+
+      applyColors(current);
+    }
+
+    function updateSummaryUI() {
+      const current = currentSegment();
+      const next    = nextSegment();
+      const totalMinutes = schedule.reduce((s, seg) => s + seg.minutes, 0);
+
+      let status;
+      if (scheduleComplete) status = 'Schedule complete';
+      else if (!current) status = 'No schedule loaded';
+      else status = current.type === 'talk'
+        ? (running() ? 'Talk in progress' : 'Talk ready')
+        : (running() ? 'Break in progress' : 'Break ready');
+
+      statusPill.textContent = status;
+      currentSegmentEl.textContent  = current ? current.title : '—';
+      nextSegmentEl.textContent     = next ? next.title : 'End of schedule';
+      progressInfoEl.textContent    = schedule.length ? `${Math.min(currentIndex+1, schedule.length)} of ${schedule.length}` : '0 of 0';
+      totalDurationEl.textContent   = formatDuration(totalMinutes);
+      segmentTypeEl.textContent     = current ? (current.type === 'talk' ? 'Talk' : 'Break') : '—';
+      segmentLengthEl.textContent   = current ? `${current.minutes} minutes` : '—';
+      remainingQueueEl.textContent  = schedule.length ? `${Math.max(schedule.length - currentIndex - 1, 0)} segments` : '0 segments';
+      subline.textContent           = current ? `${current.title} · next: ${next ? next.title : 'End of schedule'}` : 'Load a schedule to begin';
+      startPauseBtn.textContent     = running() ? 'Pause' : 'Start';
+    }
+
+    function render() {
+      updateTimerUI();
+      updateSummaryUI();
+      applyColors(currentSegment());
+      renderScheduleList();
+      persist();
+    }
+
+    /* ── Helpers for events ── */
+
+    function currentSegment() { return schedule[currentIndex] || null; }
+    function nextSegment()    { return schedule[currentIndex + 1] || null; }
+
+    async function toggleFullscreen() {
+      try {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+        else await document.exitFullscreen();
+      } catch (_) {}
+    }
+
+    /* ── Event wiring ── */
+
+    schedulePresetBtns.forEach(b => b.addEventListener('click', () => setPreset(b.dataset.preset)));
+    loadScheduleBtn.addEventListener('click', loadSchedule);
+    updateLiveBtn.addEventListener('click', updateLiveSchedule);
+    clearScheduleBtn.addEventListener('click', clearSchedule);
+    startPauseBtn.addEventListener('click', () => running() ? pauseTimer() : startTimer());
+    resetBtn.addEventListener('click', resetSegment);
+    skipBtn.addEventListener('click', goToNextSegment);
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    soundBtn.addEventListener('click', toggleSound);
+
+    add25Btn.addEventListener('click', () => quickAdd('talk, 25, New 25 minute talk'));
+    add50Btn.addEventListener('click', () => quickAdd('talk, 50, New 50 minute talk'));
+    addBreak15Btn.addEventListener('click', () => quickAdd('break, 15, Short break'));
+    addBreak60Btn.addEventListener('click', () => quickAdd('break, 60, Meal break'));
+
+    /* ── Drag-and-drop wiring (delegated on the queue list) ── */
+
+    function isLocked(index) {
+      return started && index <= currentIndex;
+    }
+
+    function dragRowFromEvent(e) {
+      return e.target && e.target.closest ? e.target.closest('.schedule-row') : null;
+    }
+
+    function clearDragState() {
+      dragIndex = null;
+      scheduleListEl.querySelectorAll('.dragging, .drag-over-top, .drag-over-bottom')
+        .forEach(el => el.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom'));
+    }
+
+    scheduleListEl.addEventListener('dragstart', e => {
+      const row = dragRowFromEvent(e);
+      if (!row || !row.draggable) { e.preventDefault(); return; }
+      dragIndex = Number(row.dataset.index);
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(dragIndex));
+    });
+
+    scheduleListEl.addEventListener('dragover', e => {
+      if (dragIndex === null) return;
+      const row = dragRowFromEvent(e);
+      if (!row) return;
+      const i = Number(row.dataset.index);
+      if (i === dragIndex || isLocked(i)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = row.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      row.classList.remove('drag-over-top', 'drag-over-bottom');
+      row.classList.add(before ? 'drag-over-top' : 'drag-over-bottom');
+    });
+
+    scheduleListEl.addEventListener('dragleave', e => {
+      const row = dragRowFromEvent(e);
+      if (row) row.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+
+    scheduleListEl.addEventListener('drop', e => {
+      if (dragIndex === null) return;
+      const row = dragRowFromEvent(e);
+      if (!row) return;
+      const i = Number(row.dataset.index);
+      if (i === dragIndex || isLocked(i)) return;
+      e.preventDefault();
+      const rect = row.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      reorderSegment(dragIndex, i, before);
+      clearDragState();
+    });
+
+    scheduleListEl.addEventListener('dragend', clearDragState);
+
+    document.addEventListener('keydown', e => {
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON' || tag === 'SELECT') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        running() ? pauseTimer() : startTimer();
+      }
+      if (e.key.toLowerCase() === 'n') goToNextSegment();
+      if (e.key.toLowerCase() === 'r') resetSegment();
+      if (e.key.toLowerCase() === 'f') toggleFullscreen();
+      if (e.key.toLowerCase() === 'm') toggleSound();
+      if (e.key.toLowerCase() === 'o') dismissOverlay();
+    });
+
+    wrapOverlay.addEventListener('click', dismissOverlay);
+
+    if (!restore()) setPreset('sample');
+  </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="A conference session timer: build a run of talks and breaks, then let the countdown advance through each segment automatically." />
+  <title>Conference Session Timer</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="phase-green">
+  <main class="app">
+    <aside class="panel" aria-label="Schedule controls">
+      <section>
+        <h1>Schedule Timer</h1>
+        <p class="intro">Build a whole run of talks and breaks in one go, then let the timer advance through each segment automatically. Your schedule is saved in this browser and restored on reload.</p>
+      </section>
+
+      <section>
+        <p class="section-label">Prebuilt schedules</p>
+        <div class="preset-grid">
+          <button class="schedule-preset active" data-preset="sample">2x25, 50, 60 break</button>
+          <button class="schedule-preset" data-preset="standard">25, 25, 50</button>
+          <button class="schedule-preset" data-preset="short-demo">Demo run</button>
+          <button class="schedule-preset" data-preset="blank">Blank</button>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Quick add</p>
+        <div class="quick-grid">
+          <button id="add25">Add 25 + 5</button>
+          <button id="add50">Add 50 + 10</button>
+          <button id="addBreak15">Add 15 break</button>
+          <button id="addBreak60">Add 60 break</button>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Schedule editor</p>
+        <textarea id="scheduleInput" spellcheck="false"></textarea>
+        <p class="helper">
+          One segment per line: <strong>talk, 25, Title</strong> or <strong>break, 60, Lunch</strong>. Edit upcoming lines, then <strong>Update</strong> — don't delete past lines.
+        </p>
+        <p class="helper" style="margin-top: var(--space-3);">
+          Shortcuts: <strong>Space</strong> start/pause · <strong>N</strong> next · <strong>R</strong> reset · <strong>F</strong> fullscreen · <strong>O</strong> dismiss overlay · <strong>M</strong> sound
+        </p>
+        <div class="button-grid" style="margin-top: var(--space-3);">
+          <button id="loadSchedule" class="primary">Load</button>
+          <button id="updateLive" class="update">Update</button>
+          <button id="startPause">Start</button>
+          <button id="skip">Skip</button>
+          <button id="reset">Reset</button>
+          <button id="clearSchedule">Clear</button>
+          <button id="soundToggle">Sound: On</button>
+          <button id="fullscreen" class="wide">Fullscreen</button>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-label">Queue preview</p>
+        <div id="scheduleList" class="schedule-list"></div>
+        <p class="helper" style="margin-top: var(--space-2);">Drag segments to reorder. Past and in-progress segments are locked.</p>
+        <p id="validationMessage" class="hint">Schedule loaded.</p>
+      </section>
+    </aside>
+
+    <section class="display" aria-label="Main countdown display">
+      <div class="display-inner">
+        <div id="statusPill" class="status-pill">Talk ready</div>
+        <p id="timeLeft" class="time" aria-live="off">25:00</p>
+        <div class="progress-bar" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+        <div id="subline" class="subline">Opening talk · next: Short buffer</div>
+
+        <div class="summary-grid">
+          <article class="summary-card">
+            <span>Current segment</span>
+            <strong id="currentSegment">Opening talk</strong>
+          </article>
+          <article class="summary-card">
+            <span>Next segment</span>
+            <strong id="nextSegment">Short buffer</strong>
+          </article>
+          <article class="summary-card">
+            <span>Progress</span>
+            <strong id="progressInfo">1 of 6</strong>
+          </article>
+          <article class="summary-card">
+            <span>Total schedule</span>
+            <strong id="totalDuration">2h 50m</strong>
+          </article>
+        </div>
+
+        <div class="meta-grid">
+          <article class="meta-card">
+            <span>Type</span>
+            <strong id="segmentType">Talk</strong>
+          </article>
+          <article class="meta-card">
+            <span>Segment length</span>
+            <strong id="segmentLength">25 minutes</strong>
+          </article>
+          <article class="meta-card">
+            <span>Remaining queue</span>
+            <strong id="remainingQueue">5 segments</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Full-screen wrap overlay (kept out of .display so position:fixed covers the viewport) -->
+  <div id="wrapOverlay" class="wrap-overlay" aria-live="assertive" aria-atomic="true">
+    <div class="wrap-overlay-inner">
+      <div class="wrap-title">WRAP IT UP!!!</div>
+      <div id="wrapTimer" class="wrap-timer">00:00</div>
+          <div class="wrap-dismiss">Press O or click to dismiss</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
