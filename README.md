@@ -56,14 +56,30 @@ break, 60, Lunch break
 | `O` | Dismiss the WRAP IT UP overlay |
 | `M` | Toggle sound |
 
+## Standalone single-file build
+
+Prefer one portable HTML file? `standalone/conference-timer.html` inlines all CSS and JS into a single file you can download, double-click, or share.
+
+Regenerate it from the split sources with:
+
+```
+python3 scripts/build-standalone.py
+```
+
 ## Project structure
 
 ```
-index.html   App markup
-styles.css   All styling
-app.js       All logic
-archive/     Historical single-file versions (v10–v18)
+index.html          App markup
+styles.css          All styling
+app.js              All logic
+standalone/         Single-file build (conference-timer.html)
+scripts/            Build tooling
+archive/            Versioned single-file builds (v10–v19)
 ```
+
+## Versioning
+
+Each functional change bumps the version. The current release lives in the split sources (`index.html` + `styles.css` + `app.js`), the latest single-file build is `standalone/conference-timer.html`, and every prior single-file release is preserved in `archive/` as `conference_timer_vN.html` (v10 → v19).
 
 ## License
 
