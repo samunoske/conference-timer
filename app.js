@@ -1,3 +1,5 @@
+const VERSION = 'v19';
+
 const PRESETS = {
   sample: [
     'talk, 25, Opening talk',
@@ -42,6 +44,8 @@ const add25Btn           = document.getElementById('add25');
 const add50Btn           = document.getElementById('add50');
 const addBreak15Btn      = document.getElementById('addBreak15');
 const addBreak60Btn      = document.getElementById('addBreak60');
+
+document.querySelector('h1').textContent = `Schedule Timer ${VERSION}`;
 const statusPill         = document.getElementById('statusPill');
 const timeLeft           = document.getElementById('timeLeft');
 const progressFill       = document.getElementById('progressFill');
@@ -518,7 +522,7 @@ function updateTimerUI() {
 
   timeLeft.textContent    = formatted;
   wrapTimerEl.textContent = formatted;
-  document.title = `${formatted} · Conference Session Timer`;
+  document.title = `${formatted} · Conference Timer ${VERSION}`;
 
   progressFill.style.width = current && current.seconds > 0
     ? `${Math.max(0, Math.min(100, (remainingSeconds / current.seconds) * 100))}%`

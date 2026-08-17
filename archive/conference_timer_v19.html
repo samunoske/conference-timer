@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="dark" />
   <meta name="description" content="A conference session timer: build a run of talks and breaks, then let the countdown advance through each segment automatically." />
-  <title>Conference Session Timer</title>
+  <title>Conference Timer</title>
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
   <style>
 :root {
@@ -558,6 +558,8 @@ body.wrap-mode .progress-bar {
   </div>
 
   <script>
+const VERSION = 'v19';
+
 const PRESETS = {
   sample: [
     'talk, 25, Opening talk',
@@ -602,6 +604,8 @@ const add25Btn           = document.getElementById('add25');
 const add50Btn           = document.getElementById('add50');
 const addBreak15Btn      = document.getElementById('addBreak15');
 const addBreak60Btn      = document.getElementById('addBreak60');
+
+document.querySelector('h1').textContent = `Schedule Timer ${VERSION}`;
 const statusPill         = document.getElementById('statusPill');
 const timeLeft           = document.getElementById('timeLeft');
 const progressFill       = document.getElementById('progressFill');
@@ -1078,7 +1082,7 @@ function updateTimerUI() {
 
   timeLeft.textContent    = formatted;
   wrapTimerEl.textContent = formatted;
-  document.title = `${formatted} · Conference Session Timer`;
+  document.title = `${formatted} · Conference Timer ${VERSION}`;
 
   progressFill.style.width = current && current.seconds > 0
     ? `${Math.max(0, Math.min(100, (remainingSeconds / current.seconds) * 100))}%`
